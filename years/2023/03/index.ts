@@ -1,4 +1,5 @@
 import _ from 'lodash';
+import { isCharNumber } from '../../../util/helpers';
 import * as util from '../../../util/util';
 import * as test from '../../../util/test';
 import chalk from 'chalk';
@@ -12,12 +13,85 @@ const DAY = 3;
 // data path    : /home/rothanak/Projects/advent-of-code-2023/years/2023/03/data.txt
 // problem url  : https://adventofcode.com/2023/day/3
 
+interface Symbol {
+  value: number | string;
+  isPartNumber: boolean;
+}
+
+type Schematic = (Symbol | undefined)[][];
+
+const parseInput = (input: string): Schematic =>
+  input.split('\n').map(row =>
+    row.split('').map(symbol =>
+      symbol === '.'
+        ? undefined
+        : {
+            value: isCharNumber(symbol) ? +symbol : symbol,
+            isPartNumber: false,
+          }
+    )
+  );
+
+const getPartNumber = (schematic: Schematic, row: number, col: number, left: boolean, right: boolean): string => {
+  const symbol = schematic[row]?.[col];
+  if (symbol === undefined || typeof symbol?.value !== 'number') return '';
+
+  symbol.isPartNumber = true;
+
+  return (
+    (left ? getPartNumber(schematic, row, col - 1, true, false) : '') +
+    `${symbol.value}` +
+    (right ? getPartNumber(schematic, row, col + 1, false, true) : '')
+  );
+};
+
 async function p2023day3_part1(input: string, ...params: any[]) {
-  return 'Not implemented';
+  const schematic = parseInput(input);
+
+  let partNumbers = 0;
+  for (const [row, rows] of schematic.entries()) {
+    for (const [col, symbol] of rows.entries()) {
+      if (symbol !== undefined && typeof symbol.value !== 'number') {
+        for (let rowOffset = -1; rowOffset <= 1; rowOffset++) {
+          for (let colOffset = -1; colOffset <= 1; colOffset++) {
+            const symbol = schematic[row + rowOffset][col + colOffset];
+            if (typeof symbol?.value == 'number' && !symbol.isPartNumber) {
+              partNumbers += +getPartNumber(schematic, row + rowOffset, col + colOffset, true, true);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return partNumbers;
 }
 
 async function p2023day3_part2(input: string, ...params: any[]) {
-  return 'Not implemented';
+  const schematic = parseInput(input);
+
+  let gearRatios = 0;
+  for (const [row, rows] of schematic.entries()) {
+    for (const [col, symbol] of rows.entries()) {
+      if (symbol?.value === '*') {
+        const partNumbers = [];
+        for (let rowOffset = -1; rowOffset <= 1; rowOffset++) {
+          for (let colOffset = -1; colOffset <= 1; colOffset++) {
+            const symbol = schematic[row + rowOffset][col + colOffset];
+            if (typeof symbol?.value == 'number' && !symbol.isPartNumber) {
+              partNumbers.push(+getPartNumber(schematic, row + rowOffset, col + colOffset, true, true));
+            }
+          }
+        }
+
+        if (partNumbers.length === 2) {
+          gearRatios += partNumbers[0] * partNumbers[1];
+        }
+      }
+    }
+  }
+
+  return gearRatios;
 }
 
 async function run() {

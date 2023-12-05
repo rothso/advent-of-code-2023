@@ -1,4 +1,5 @@
 import _, { first } from 'lodash';
+import { isCharNumber } from '../../../util/helpers';
 import * as util from '../../../util/util';
 import * as test from '../../../util/test';
 import chalk from 'chalk';
@@ -11,10 +12,6 @@ const DAY = 1;
 // solution path: /home/rothanak/Projects/advent-of-code-2023/years/2023/01/index.ts
 // data path    : /home/rothanak/Projects/advent-of-code-2023/years/2023/01/data.txt
 // problem url  : https://adventofcode.com/2023/day/1
-
-function isCharNumber(c: string) {
-  return c >= '0' && c <= '9';
-}
 
 const wordToNumber: { [key: string]: string } = {
   one: '1',
