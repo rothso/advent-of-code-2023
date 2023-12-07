@@ -12,12 +12,48 @@ const DAY = 4;
 // data path    : /home/rothanak/Projects/advent-of-code-2023/years/2023/04/data.txt
 // problem url  : https://adventofcode.com/2023/day/4
 
+interface Card {
+  id: number;
+  winningNumbers: number[];
+  heldNumbers: number[];
+}
+
+const parseInput = (input: string): Card[] => {
+  return input.split('\n').map(card => {
+    const [, id, winningNumbers, heldNumbers] = /Card\s+(\d+):\s+(.*) \|\s+(.*)/.exec(card) || [];
+    return {
+      id: +id,
+      winningNumbers: winningNumbers.split(/\s+/).map(num => +num),
+      heldNumbers: heldNumbers.split(/\s+/).map(num => +num),
+    };
+  });
+};
+
 async function p2023day4_part1(input: string, ...params: any[]) {
-  return 'Not implemented';
+  const cards = parseInput(input);
+
+  return cards
+    .map(card => card.heldNumbers.filter(heldNumber => card.winningNumbers.includes(heldNumber)))
+    .map(matches => (matches.length ? 2 ** (matches.length - 1) : 0))
+    .reduce((sum, score) => sum + score);
 }
 
 async function p2023day4_part2(input: string, ...params: any[]) {
-  return 'Not implemented';
+  const cards = parseInput(input);
+
+  const numCards = cards.map(card => ({
+    id: card.id,
+    score: card.heldNumbers.filter(heldNumber => card.winningNumbers.includes(heldNumber)).length,
+    count: 1,
+  }));
+
+  for (let [i, { score, count }] of numCards.entries()) {
+    for (let j = 1; j <= score; j++) {
+      numCards[i + j].count += count;
+    }
+  }
+
+  return numCards.reduce((sum, numCard) => (sum += numCard.count), 0);
 }
 
 async function run() {
