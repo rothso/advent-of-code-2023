@@ -12,12 +12,125 @@ const DAY = 5;
 // data path    : /home/rothanak/Projects/advent-of-code-2023/years/2023/05/data.txt
 // problem url  : https://adventofcode.com/2023/day/5
 
+interface Almanac {
+  seeds: number[];
+  maps: Map[];
+}
+
+interface Map {
+  from: string;
+  to: string;
+  ranges: MapRange[];
+}
+
+interface MapRange extends Range {
+  dest: number;
+}
+
+interface Range {
+  start: number;
+  end: number;
+}
+
+const parseInput = (input: string): Almanac => {
+  const [seedList, ...sectionList] = input.split('\n\n');
+  const [, seeds] = /seeds: (.*)/.exec(seedList) || [];
+
+  return {
+    seeds: seeds.split(' ').map(seed => +seed),
+    maps: sectionList.map(section => {
+      const [name, ...ranges] = section.split('\n');
+      const [, from, to] = /(.*)-to-(.*) map:/.exec(name) || [];
+      return {
+        from,
+        to,
+        ranges: ranges.map(range => {
+          const [dest, start, length] = range.split(' ');
+          return {
+            dest: +dest,
+            start: +start,
+            end: +start + +length,
+          };
+        }),
+      };
+    }),
+  };
+};
+
 async function p2023day5_part1(input: string, ...params: any[]) {
-  return 'Not implemented';
+  const almanac = parseInput(input);
+
+  return Math.min(
+    ...almanac.seeds.map(seed =>
+      almanac.maps.reduce((number, map) => {
+        const range = map.ranges.find(range => number >= range.start && number < range.end);
+        return range !== undefined ? number - range.start + range.dest : number;
+      }, seed)
+    )
+  );
 }
 
 async function p2023day5_part2(input: string, ...params: any[]) {
-  return 'Not implemented';
+  const almanac = parseInput(input);
+
+  const ranges: Range[] = almanac.seeds
+    .reduce((chunks: number[][], seed, i) => {
+      const chunk = Math.floor(i / 2);
+      chunks[chunk] = [...(chunks[chunk] || []), seed];
+      return chunks;
+    }, [])
+    .map(chunk => ({ start: chunk[0], end: chunk[0] + chunk[1] }));
+
+  for (let map of almanac.maps) {
+    // Sort the ranges
+    map.ranges.sort((a, b) => a.start - b.start);
+
+    // Plug any holes with the identity transform
+    let updatedRanges: MapRange[] = [];
+    for (let i = 0; i < map.ranges.length; i++) {
+      const currentRange = map.ranges[i];
+      const nextRange = map.ranges[i + 1];
+
+      // Push a range that starts at 0 if there isn't one
+      if (i == 0 && currentRange.start !== 0) {
+        updatedRanges.push({
+          dest: 0,
+          start: 0,
+          end: currentRange.start,
+        });
+      }
+
+      // Push the current range
+      updatedRanges.push(currentRange);
+
+      // Push the range between this and the next one of it's missing
+      if (nextRange !== undefined && currentRange.end < nextRange.start) {
+        updatedRanges.push({
+          dest: currentRange.end,
+          start: currentRange.end,
+          end: nextRange.start,
+        });
+      }
+    }
+    map.ranges = updatedRanges;
+  }
+
+  return Math.min(
+    ...almanac.maps
+      .reduce(
+        (fromRanges, { ranges: toRanges }) =>
+          fromRanges.flatMap(({ start, end }) =>
+            toRanges
+              .filter(toRange => end > toRange.start && start < toRange.end)
+              .map(toRange => ({
+                start: Math.max(start, toRange.start) - toRange.start + toRange.dest,
+                end: Math.min(toRange.end, end) - toRange.start + toRange.dest,
+              }))
+          ),
+        ranges
+      )
+      .map(({ start }) => start)
+  );
 }
 
 async function run() {
